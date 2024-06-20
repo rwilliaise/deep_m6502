@@ -1,17 +1,12 @@
-  .macro store_addr, addr
-  ldx #$0
-  lda .address,X
-  sta $10
-
-  inx
-  lda .address,X
-  sta $11
-
-.address:
-  .addr hello_world
-
-  .endmacro
   .org $8000
+
+  .macro load_addr, address
+  lda #<\address
+  sta $10
+  lda #>\address
+  sta $11
+  .endmacro
+
 putc:
   sta $6001
 
@@ -23,22 +18,28 @@ putc:
   rts
 
 puts:
-  ldx #0
+  ldy #0
 
 .loop:
-  lda ($10,X)
+  lda ($10),Y
   beq .zero
-  inx
+  iny
   pha
   jsr putc
   pla
-  bne .loop
+  jmp .loop
 
 .zero:
   lda #$A
   jsr putc
 
   rts
+
+line00:
+  .asciiz "Hello, world!"
+
+line01:
+  .asciiz "This second line should also appear!"
 
 _start:
   lda #%00000001 ; only need one output
@@ -47,14 +48,14 @@ _start:
   lda #%11111111 ; all outputs
   sta $6003 ; ddra
 
+  load_addr line00
+  jsr puts
+
+  load_addr line01
   jsr puts
 
   lda #$0
-  brk ; stop!
-
-
-hello_world:
-  .asciiz "Hello, world!"
+  brk
 
   .org $fffc
   .word _start
